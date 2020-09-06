@@ -1,0 +1,55 @@
+#!/bin/bash
+
+set \
+  -o nounset \
+  -o errexit
+#  -o verbose
+#  -o xtrace
+
+FEATURE_PACK=~/workspace/runtimes/wildfly/wildfly-graphql-feature-pack
+
+if [ ! -d $FEATURE_PACK ]; then
+  echo GraphQL Feature Pack not found in ${FEATURE_PACK}. 1>&2
+  exit 1
+fi
+
+BASE=modules/system/layers/base
+MODULE_BASE=${FEATURE_PACK}/wildfly/${BASE}
+
+if [ ! -d $MODULE_BASE ]; then
+  echo Module base in GraphQL Feature Pack not found in ${MODULE_BASE}. 1>&2
+  echo Probably you\'ll have to build it first: 1>&2
+  echo galleon.sh provision provision.xml --dir=wildfly 1>&2
+  exit 2
+fi
+
+BUILD_DIR=smallrye-graphql
+
+if [ -d $BUILD_DIR ]; then
+  echo Build dir already exists ${BUILD_DIR}. Remove it first. 1>&2
+  exit 3
+fi
+
+mkdir ${BUILD_DIR}
+
+BUILD_BASE=${BUILD_DIR}/${BASE}
+
+mkdir -p ${BUILD_BASE}/io/smallrye/graphql
+cp -r ${MODULE_BASE}/io/smallrye/graphql/ ${BUILD_BASE}/io/smallrye/graphql/
+
+mkdir -p ${BUILD_BASE}/org/eclipse/microprofile/graphql
+cp -r ${MODULE_BASE}/org/eclipse/microprofile/graphql/ ${BUILD_BASE}/org/eclipse/microprofile/graphql/
+
+mkdir -p ${BUILD_BASE}/org/wildfly/extension/microprofile/graphql-smallrye
+cp -r ${MODULE_BASE}/org/wildfly/extension/microprofile/graphql-smallrye/ ${BUILD_BASE}/org/wildfly/extension/microprofile/graphql-smallrye/
+
+ZIP=smallrye-graphql.zip
+
+if [ -f "${ZIP}" ]; then
+  rm "${ZIP}"
+fi
+
+cd ${BUILD_DIR}
+zip -r --quiet ../"${ZIP}" .
+cd ..
+rm -r ${BUILD_DIR}
