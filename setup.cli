@@ -1,0 +1,39 @@
+embed-server
+# --std-out=echo
+batch
+
+/system-property=stage:add(value=local)
+/system-property=resteasy.preferJacksonOverJsonB:add(value=false)
+
+# graphql
+/extension=org.wildfly.extension.microprofile.graphql-smallrye:add
+/subsystem=microprofile-graphql-smallrye:add
+
+# logging
+/subsystem=logging/console-handler=CONSOLE:write-attribute(name=level,value=ALL)
+/subsystem=logging/logger=com.github.t1:add(level=DEBUG)
+/subsystem=logging/logger=io.smallrye.graphql:add(level=DEBUG)
+/subsystem=logging/logger=io.smallrye.graphql.servlet:add(level=INFO)
+#/subsystem=logging/logger=io.jaegertracing.Configuration:add(level=INFO)
+
+# openapi
+/extension=org.wildfly.extension.microprofile.openapi-smallrye:add()
+/subsystem=microprofile-openapi-smallrye:add()
+
+# opentracing
+/socket-binding-group=standard-sockets/remote-destination-outbound-socket-binding=jaeger:add(host=localhost, port=6831)
+/subsystem=microprofile-opentracing-smallrye/jaeger-tracer=jaeger-demo:add(sampler-type=const, sampler-param=1, reporter-log-spans=true, sender-binding=jaeger)
+/subsystem=microprofile-opentracing-smallrye:write-attribute(name=default-tracer, value=jaeger-demo)
+
+# fault-tolerance
+/extension=org.wildfly.extension.microprofile.fault-tolerance-smallrye:add
+/subsystem=microprofile-fault-tolerance-smallrye:add
+
+# more metrics
+/subsystem=ejb3:write-attribute(name=statistics-enabled,value=true)
+/subsystem=transactions:write-attribute(name=statistics-enabled,value=true)
+/subsystem=undertow:write-attribute(name=statistics-enabled,value=true)
+/subsystem=webservices:write-attribute(name=statistics-enabled,value=true)
+#/subsystem=datasources/data-source=orders:write-attribute(name=statistics-enabled,value=true)
+
+run-batch
