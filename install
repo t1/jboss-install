@@ -42,7 +42,8 @@ echo Unpack "${TAR}" to "${TEMP}" 1>&2
 tar -xzf "${TAR}"
 # shellcheck disable=SC2046
 # shellcheck disable=SC2005
-FILE_COUNT=$(echo $(find . -depth 1 | wc -l))
+# shellcheck disable=SC2012
+FILE_COUNT=$(echo $(ls -A | wc -l))
 if [ "${FILE_COUNT}" != 1 ]; then
   echo Expected exactly one root directory in "${TAR}" but found "${FILE_COUNT}": 1>&2
   ls -l 1>&2
