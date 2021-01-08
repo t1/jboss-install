@@ -2,33 +2,60 @@
 
 set \
   -o nounset \
-  -o errexit
+  -o errexit \
+#  -o xtrace \
 #  -o verbose
-#  -o xtrace
 
 TARGET_DIR=$(pwd)
 cd "$(dirname "$0")"
 
 INSTALLER_HOME=$(pwd)
 JBOSS_CLI_SCRIPT="${INSTALLER_HOME}"/setup.cli
+GRAPHQL_CLI_SCRIPT="${INSTALLER_HOME}"/setup-graphql.cli
 GRAPHQL_ZIP="${INSTALLER_HOME}"/smallrye-graphql.zip
-CURRENT=$(readlink current)
-VERSION=$(readlink "$CURRENT")
+VERSION=$(readlink "$(readlink current)")
 
-if [ $# -eq 0 ]; then
-  TARGET="${TARGET_DIR}/wildfly-${VERSION}.Final"
+if [ $# -gt 0 ] && [ "$1" == "--clean" ]; then
+  CLEAN=true
+  shift
 else
+  CLEAN=false
+fi
+
+if [ $# -gt 0 ] && [ "$1" == "--unconfigured" ]; then
+  CONFIGURE=false
+  shift
+else
+  CONFIGURE=true
+fi
+
+if [ $# -gt 0 ] && [ "$1" == "--graphql" ]; then
+  GRAPHQL=true
+  shift
+else
+  GRAPHQL=false
+fi
+
+if [ $# -gt 0 ]; then
   TARGET="${TARGET_DIR}/$1"
+else
+  TARGET="${TARGET_DIR}/${VERSION}"
 fi
 
 if [ -d "$TARGET" ]; then
-  echo Target directory \""${TARGET}"\" already exists. You can specify one as an argument. 1>&2
-  exit 1
+  if [ $CLEAN == "true" ]; then
+    echo "cleaning ${TARGET}"
+    rm -r "${TARGET}"
+  else
+    echo Target directory \""${TARGET}"\" already exists. You can specify a different one as an argument \
+      or pass \"--clean\". 1>&2
+    exit 1
+  fi
 fi
 
 
 ################### unpack
-TAR="${INSTALLER_HOME}"/wildfly-${VERSION}.Final.tar.gz
+TAR="${INSTALLER_HOME}"/${VERSION}.tar.gz
 
 if [ ! -f "$TAR" ]; then
   echo Archive \""${TAR}"\" does not exist. 1>&2
@@ -37,8 +64,8 @@ fi
 
 TEMP=$(mktemp -d)
 cd "$TEMP"
-echo Unpack "${TAR}" to "${TEMP}" 1>&2
 
+echo Unpack "${TAR}"
 tar -xzf "${TAR}"
 # shellcheck disable=SC2046
 # shellcheck disable=SC2005
@@ -53,13 +80,21 @@ fi
 UNPACKED=$TEMP/$(ls)
 
 mv "$UNPACKED" "$TARGET"
+echo Installed "${TARGET}"
 rmdir "$TEMP"
 cd "${TARGET}"
 
-################### modules
-echo copy GraphQL modules 1>&2
-unzip -q "${GRAPHQL_ZIP}"
+################### Config
+if [ "${CONFIGURE}" == "true" ]; then
+  echo run config script "${JBOSS_CLI_SCRIPT}" 1>&2
+  ./bin/jboss-cli.sh --file="${JBOSS_CLI_SCRIPT}"
+fi
 
-################### configure
-echo run config script "${JBOSS_CLI_SCRIPT}" 1>&2
-./bin/jboss-cli.sh --file="${JBOSS_CLI_SCRIPT}"
+################### GraphQL
+if [ "${GRAPHQL}" == "true" ]; then
+  echo Install GraphQL modules 1>&2
+  unzip -q "${GRAPHQL_ZIP}"
+
+  echo run config script "${GRAPHQL_CLI_SCRIPT}" 1>&2
+  ./bin/jboss-cli.sh --file="${GRAPHQL_CLI_SCRIPT}"
+fi

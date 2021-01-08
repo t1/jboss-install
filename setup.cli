@@ -2,12 +2,8 @@ embed-server
 # --std-out=echo
 batch
 
-/system-property=stage:add(value=local)
+#/system-property=stage:add(value=local)
 /system-property=resteasy.preferJacksonOverJsonB:add(value=false)
-
-# graphql
-/extension=org.wildfly.extension.microprofile.graphql-smallrye:add
-/subsystem=microprofile-graphql-smallrye:add
 
 # logging
 /subsystem=logging/console-handler=CONSOLE:write-attribute(name=level,value=ALL)

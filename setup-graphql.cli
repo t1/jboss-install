@@ -1,0 +1,5 @@
+embed-server
+
+# graphql
+/extension=org.wildfly.extension.microprofile.graphql-smallrye:add
+/subsystem=microprofile-graphql-smallrye:add
